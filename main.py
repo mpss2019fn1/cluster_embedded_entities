@@ -1,43 +1,47 @@
 import argparse
 from pathlib import Path
 
-import nltk
+from gensim.models import Doc2Vec
+from sklearn import cluster
 
 import resources.constant
 from util.filesystem_validators import AccessibleDirectory, AccessibleTextFile
-from gensim.models import Doc2Vec
-from nltk.cluster import KMeansClusterer
 
 
 def main():
-
     parser = _initialize_parser()
     args = parser.parse_args()
 
     model = Doc2Vec.load(args.input)
 
-    x = model[model.docvecs.doctags]
+    x = model.docvecs.vectors_docs
 
     print("[Cluster-embedded-entities] Starting clustering")
 
-    clusterer = KMeansClusterer(resources.constant.NUM_CLUSTERS, distance=nltk.cluster.util.cosine_distance, repeats=25)
-    assigned_clusters = clusterer.cluster(x, assign_clusters=True)
+    kmeans = cluster.KMeans(n_clusters=resources.constant.NUM_CLUSTERS,
+                            algorithm="elkan",
+                            init="k-means++",
+                            n_jobs=resources.constant.NUMBER_OF_PARALLEL_EXECUTIONS)
+    kmeans.fit(x)
 
     print("[Cluster-embedded-entities] Clustering finished")
     print("[Cluster-embedded-entities] Start sorting entities based on assigned cluster")
 
-    cluster_map = dict.fromkeys(range(resources.constant.NUM_CLUSTERS), [])
+    cluster_map = {k: [] for k in range(resources.constant.NUM_CLUSTERS)}
 
     for i, word in enumerate(model.docvecs.doctags):
-        cluster_map[assigned_clusters[i]].append(word)
+        cluster_map[kmeans.labels_[i]].append(word)
 
     print("[Cluster-embedded-entities] Sorting finished")
     print("[Cluster-embedded-entities] Start writing to file")
 
     with open(Path(args.output, resources.constant.OUTPUT_FILE), "w+") as output_file:
         for i in range(resources.constant.NUM_CLUSTERS):
-            print(f"[[CLUSTER {i}]]", end="\n", file=output_file)
-            print(*cluster_map[i], sep="\n", file=output_file, end="\n")
+            closest_word = model.wv.similar_by_vector(kmeans.cluster_centers_[i], 1)[0][0]
+            closest_entity = model.docvecs.most_similar([kmeans.cluster_centers_[i], 1])[0][0]
+            print(f"[[CLUSTER {i}]] - Closest word: {closest_word}; Closest entity: {closest_entity}", end="\n",
+                  file=output_file)
+            print(*(cluster_map[i]), sep="\n", file=output_file, end="\n")
 
 
 def _initialize_parser():
