@@ -49,7 +49,7 @@ def main():
 
     # Write performance of clustering k clusters to file
     with open(Path(args.output, resources.constant.OUTPUT_FILE_PERFORMANCE_STATS), "a+") as performance_file:
-        print(f"{int(args.k)},{kmeans.score(x)}", file=performance_file)
+        print(f"{int(args.k)},{kmeans.inertia_}", file=performance_file)
 
 
 def _initialize_parser():
