@@ -1,66 +1,83 @@
 import argparse
-from pathlib import Path
 
-from gensim.models import Doc2Vec
-from sklearn import cluster
-
-import resources.constant
+from clusterers.dbscan_clusterer import DBScanClusterer
+from clusterers.kmeans_clusterer import KMeansClusterer
 from util.filesystem_validators import AccessibleDirectory, AccessibleTextFile
+from writers.csv_cluster_writer import CSVClusterWriter
+from writers.text_cluster_writer import TextClusterWriter
+
+VALID_OUTPUT_MODES = ["csv", "text"]
 
 
 def main():
     parser = _initialize_parser()
     args = parser.parse_args()
 
-    model = Doc2Vec.load(args.input)
+    if 'action' not in args or not args.action:
+        parser.print_usage()
+        return
 
-    x = model.docvecs.vectors_docs
+    if args.action == 'kmeans':
+        _clustering_kmeans(args)
+    if args.action == 'dbscan':
+        _clustering_dbscan(args)
 
-    print("[Cluster-embedded-entities] Starting clustering")
 
-    kmeans = cluster.KMeans(n_clusters=int(args.k),
-                            algorithm="elkan",
-                            init="k-means++",
-                            n_jobs=resources.constant.NUMBER_OF_PARALLEL_EXECUTIONS)
-    kmeans.fit(x)
+def _clustering_kmeans(args):
+    clusterer = KMeansClusterer(args.input, args.threads, args.k)
+    clusterer.build_clusters()
+    _create_writer(args).write(clusterer, args.output if "output" in args else None)
 
-    print("[Cluster-embedded-entities] Clustering finished")
-    print("[Cluster-embedded-entities] Start sorting entities based on assigned cluster")
 
-    cluster_map = {k: [] for k in range(int(args.k))}
+def _clustering_dbscan(args):
+    clusterer = DBScanClusterer(args.input, args.threads)
+    clusterer.build_clusters()
+    _create_writer(args).write(clusterer, args.output if "output" in args else None)
 
-    for i, word in enumerate(model.docvecs.doctags):
-        cluster_map[kmeans.labels_[i]].append(word)
 
-    print("[Cluster-embedded-entities] Sorting finished")
-    print("[Cluster-embedded-entities] Start writing to file")
-
-    # Write resulting clusters to file
-
-    output_file_location = Path(f"{args.output}/{int(args.k)}/")
-    output_file_location.mkdir(parents=True, exist_ok=True)
-    with open(Path(output_file_location, resources.constant.OUTPUT_FILE), "w+") as output_file:
-        for i in range(int(args.k)):
-            closest_word = model.wv.similar_by_vector(kmeans.cluster_centers_[i], 1)[0][0]
-            closest_entity = model.docvecs.most_similar([kmeans.cluster_centers_[i], 1])[0][0]
-            print(f"[[CLUSTER {i}]] - Closest word: {closest_word}; Closest entity: {closest_entity}", end="\n",
-                  file=output_file)
-            print(*(cluster_map[i]), sep="\n", file=output_file, end="\n")
-
-    # Write performance of clustering k clusters to file
-    with open(Path(args.output, resources.constant.OUTPUT_FILE_PERFORMANCE_STATS), "a+") as performance_file:
-        print(f"{int(args.k)},{kmeans.inertia_}", file=performance_file)
+def _create_writer(args):
+    if args.output_mode == "text":
+        return TextClusterWriter()
+    if args.output_mode == "csv":
+        return CSVClusterWriter()
+    raise Exception(f"Invalid output type arguments supplied. Chose from {', '.join(VALID_OUTPUT_MODES)}")
 
 
 def _initialize_parser():
     general_parser = argparse.ArgumentParser(description='Clustering trained entity embeddings')
-    general_parser.add_argument("--input", help='gensim model containing embedded entities',
-                                action=AccessibleTextFile, required=True)
-    general_parser.add_argument("--k", help='number of clusters to build', required=True)
-    general_parser.add_argument("--output", help='Desired location for storing cluster information', required=True,
-                                action=AccessibleDirectory)
+    subparsers = general_parser.add_subparsers()
+
+    _initialize_kmeans_parser(subparsers)
+    _initialize_dbscan_parser(subparsers)
 
     return general_parser
+
+
+def _initialize_kmeans_parser(subparsers):
+    kmeans_parser = subparsers.add_parser('kmeans', help='Use k-means for clustering')
+    kmeans_parser.set_defaults(action='kmeans')
+    kmeans_parser.add_argument("--input", help='gensim model containing embedded entities',
+                               action=AccessibleTextFile, required=True)
+    kmeans_parser.add_argument("--k", help='number of clusters to build', required=True, type=int)
+    kmeans_parser.add_argument("--output", help='Desired location for storing cluster information',
+                               action=AccessibleDirectory)
+    kmeans_parser.add_argument("--output-mode",
+                               help=f"Define the type of output. Chose from: {', '.join(VALID_OUTPUT_MODES)}",
+                               required=True)
+    kmeans_parser.add_argument("--threads", help="Number of threads to use", default=8, type=int)
+
+
+def _initialize_dbscan_parser(subparsers):
+    dbscan_parser = subparsers.add_parser('dbscan', help='Use DBSCAN for clustering')
+    dbscan_parser.set_defaults(action='dbscan')
+    dbscan_parser.add_argument("--input", help='gensim model containing embedded entities',
+                               action=AccessibleTextFile, required=True)
+    dbscan_parser.add_argument("--output", help='Desired location for storing cluster information',
+                               action=AccessibleDirectory)
+    dbscan_parser.add_argument("--output-mode",
+                               help=f"Define the type of output. Chose from: {', '.join(VALID_OUTPUT_MODES)}",
+                               required=True)
+    dbscan_parser.add_argument("--threads", help="Number of threads to use", default=8, type=int)
 
 
 if __name__ == "__main__":
