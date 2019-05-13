@@ -30,7 +30,7 @@ def _clustering_kmeans(args):
 
 
 def _clustering_dbscan(args):
-    clusterer = DBScanClusterer(args.input, args.threads)
+    clusterer = DBScanClusterer(args.input, args.threads, args.eps)
     clusterer.build_clusters()
     _create_writer(args).write(clusterer, args.output if "output" in args else None)
 
@@ -72,6 +72,7 @@ def _initialize_dbscan_parser(subparsers):
     dbscan_parser.set_defaults(action='dbscan')
     dbscan_parser.add_argument("--input", help='gensim model containing embedded entities',
                                action=AccessibleTextFile, required=True)
+    dbscan_parser.add_argument("--eps", help='eps for expanding clusters', required=True, type=float)
     dbscan_parser.add_argument("--output", help='Desired location for storing cluster information',
                                action=AccessibleDirectory)
     dbscan_parser.add_argument("--output-mode",

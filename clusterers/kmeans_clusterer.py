@@ -14,7 +14,7 @@ class KMeansClusterer(AbstractClusterer):
                                       algorithm="auto",
                                       init="k-means++",
                                       n_jobs=self._parallel_executions)
-        self._kmeans.fit(self._embeddings)
+        self._kmeans = self._kmeans.fit(self._embeddings)
 
     def _map_embeddings_to_clusters(self):
         self._clusters = {k: [] for k in range(int(self._k))}
