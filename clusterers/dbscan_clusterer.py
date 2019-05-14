@@ -10,8 +10,8 @@ class DBScanClusterer(AbstractClusterer):
         self._eps = eps
 
     def _train_specific_clusters(self):
-        self._dbscan = DBSCAN(algorithm='auto', eps=3, metric='euclidean',
-                              min_samples=100, n_jobs=self._parallel_executions)
+        self._dbscan = DBSCAN(algorithm='auto', eps=0.03012, metric='cosine',
+                              min_samples=3, n_jobs=self._parallel_executions)
         self._labels = self._dbscan.fit_predict(self._embeddings)
 
     def _map_embeddings_to_clusters(self):
