@@ -1,4 +1,5 @@
 import argparse
+import logging
 
 from clusterers.dbscan_clusterer import DBScanClusterer
 from clusterers.kmeans_clusterer import KMeansClusterer
@@ -10,6 +11,7 @@ VALID_OUTPUT_MODES = ["csv", "text"]
 
 
 def main():
+    logging.basicConfig(format='%(asctime)s : [%(threadName)s] %(levelname)s : %(message)s', level=logging.INFO)
     parser = _initialize_parser()
     args = parser.parse_args()
 
