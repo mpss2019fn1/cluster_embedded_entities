@@ -2,6 +2,9 @@ from sklearn.cluster import DBSCAN
 
 from clusterers.abstract_clusterer import AbstractClusterer
 
+DBSCAN_METRIC = "euclidean"
+# DBSCAN_METRIC = "cosine"
+
 
 class DBScanClusterer(AbstractClusterer):
 
@@ -10,7 +13,7 @@ class DBScanClusterer(AbstractClusterer):
         self._eps = eps
 
     def _train_specific_clusters(self):
-        self._dbscan = DBSCAN(algorithm='auto', eps=0.03012, metric='cosine',
+        self._dbscan = DBSCAN(algorithm='auto', eps=self._eps, metric=DBSCAN_METRIC,
                               min_samples=3, n_jobs=self._parallel_executions)
         self._labels = self._dbscan.fit_predict(self._embeddings)
 
