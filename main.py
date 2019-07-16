@@ -1,23 +1,24 @@
 import argparse
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 
 from clustering.DBScan.dbscan_cluster_builder import DBScanClusterBuilder
 from clustering.KMeans.kmeans_cluster_builder import KMeansClusterBuilder
 from clustering.SimDim.simdim_cluster_builder import SimDimClusterBuilder
 from clustering.abstract_cluster_builder import AbstractClusterBuilder
 from util.filesystem_validators import WriteableDirectory, ReadableFile
+from writers.abstract_cluster_writer import AbstractClusterWriter
 from writers.csv_cluster_writer import CSVClusterWriter
 from writers.text_cluster_writer import TextClusterWriter
 
 VALID_OUTPUT_MODES = ["csv", "text"]
 
 
-def main():
+def main() -> None:
     logging.basicConfig(format="%(asctime)s : [%(threadName)s] %(levelname)s : %(message)s", level=logging.INFO)
-    parser = _initialize_parser()
-    args = parser.parse_args()
+    parser: argparse.ArgumentParser = _initialize_parser()
+    args: Any = parser.parse_args()
 
     if "action" not in args or not args.action:
         parser.print_usage()
@@ -41,7 +42,7 @@ def main():
     _create_writer(args).write(cluster_builder, args.output if "output" in args else None)
 
 
-def _create_writer(args):
+def _create_writer(args) -> AbstractClusterWriter:
     if args.output_mode == "text":
         return TextClusterWriter()
     if args.output_mode == "csv":
@@ -50,7 +51,7 @@ def _create_writer(args):
     raise Exception(f"Invalid output type arguments supplied. Choose from {', '.join(VALID_OUTPUT_MODES)}")
 
 
-def _initialize_parser():
+def _initialize_parser() -> argparse.ArgumentParser:
     general_parser = argparse.ArgumentParser(description="Clustering trained entity embeddings")
     subparsers = general_parser.add_subparsers()
 
@@ -61,7 +62,7 @@ def _initialize_parser():
     return general_parser
 
 
-def _initialize_kmeans_parser(subparsers):
+def _initialize_kmeans_parser(subparsers) -> None:
     kmeans_parser = subparsers.add_parser("kmeans",
                                           help="Use k-means for clustering")
     kmeans_parser.set_defaults(action="kmeans")
@@ -89,7 +90,7 @@ def _initialize_kmeans_parser(subparsers):
                                default=8)
 
 
-def _initialize_dbscan_parser(subparsers):
+def _initialize_dbscan_parser(subparsers) -> None:
     dbscan_parser = subparsers.add_parser("dbscan",
                                           help="Use DBSCAN for clustering")
     dbscan_parser.set_defaults(action="dbscan")
@@ -117,7 +118,7 @@ def _initialize_dbscan_parser(subparsers):
                                default=8)
 
 
-def _initialize_simdim_parser(subparsers):
+def _initialize_simdim_parser(subparsers) -> None:
     simdim_parser = subparsers.add_parser("simdim",
                                           help="Use SimDim for clustering")
     simdim_parser.set_defaults(action="simdim")
