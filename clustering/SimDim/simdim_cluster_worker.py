@@ -8,9 +8,9 @@ from gensim.models import KeyedVectors
 
 class SimDimClusterWorker:
 
-    def __init__(self, embedding: KeyedVectors):
-        self._embedding: KeyedVectors = embedding
-        self._minimum_cluster_size: int = max(10, len(self._embedding.vectors) // (self._embedding.vector_size * 10))
+    def __init__(self, model: KeyedVectors):
+        self._model: KeyedVectors = model
+        self._minimum_cluster_size: int = max(10, len(self._model.vectors) // (self._model.vector_size * 10))
 
         # state for cluster extraction
         self._dimension: int = 0
@@ -25,13 +25,13 @@ class SimDimClusterWorker:
     def __call__(self, dimension: int):
         return self.extract_cluster(dimension)
 
-    def extract_cluster(self, dimension: int) -> Optional[Dict[int, Iterable[str]]]:
+    def extract_cluster(self, dimension: int) -> Optional[Dict[int, List[str]]]:
         self._dimension = dimension
 
         logging.info(f"[DIMENSION-{self._dimension}] begin")
 
-        vector_values: List[float] = [vector[self._dimension].item() for vector in self._embedding.vectors]
-        vector_labels: List[str] = list(self._embedding.vocab.keys())
+        vector_values: List[float] = [vector[self._dimension].item() for vector in self._model.vectors]
+        vector_labels: List[str] = list(self._model.vocab.keys())
 
         sorted_tuples: List[Tuple[float, str]] = sorted(zip(vector_values, vector_labels), key=lambda x: x[0])
 
@@ -45,8 +45,8 @@ class SimDimClusterWorker:
         if self._len(self._biggest_cluster) < self._minimum_cluster_size:
             return None
 
-        return {self._dimension: (self._sorted_labels[label_index]
-                                  for label_index in range(self._biggest_cluster[0], self._biggest_cluster[1]))}
+        return {self._dimension: [self._sorted_labels[label_index]
+                                  for label_index in range(self._biggest_cluster[0], self._biggest_cluster[1])]}
 
     def _create_biggest_cluster(self) -> None:
         self._biggest_cluster = (0, 0)

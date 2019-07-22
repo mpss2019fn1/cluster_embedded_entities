@@ -14,16 +14,16 @@ class SimDimClusterBuilder(AbstractClusterBuilder):
     def _train_specific_clusters(self) -> None:
         self._clusters: Dict[int, Iterable[str]] = {}
 
-        dimensions: Iterable[int] = (dimension for dimension in range(self._embeddings.vector_size))
+        dimensions: Iterable[int] = (dimension for dimension in range(self._model.vector_size))
         with Pool(processes=self._parallel_executions) as pool:
-            clusters: List[Dict[int, Iterable[str]]] = pool.map(SimDimClusterWorker(self._embeddings), dimensions)
+            clusters: List[Dict[int, Iterable[str]]] = pool.map(SimDimClusterWorker(self._model), dimensions)
 
         for cluster in clusters:
             if not cluster:
                 continue
 
             dimension: int = list(cluster.keys())[0]
-            self._clusters[dimension] = List[cluster[dimension]]
+            self._clusters[dimension] = cluster[dimension]
 
     def _map_embeddings_to_clusters(self) -> None:
         pass

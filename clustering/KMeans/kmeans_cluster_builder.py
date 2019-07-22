@@ -21,7 +21,7 @@ class KMeansClusterBuilder(AbstractClusterBuilder):
     def _map_embeddings_to_clusters(self) -> None:
         self._clusters = {k: [] for k in range(self._k)}
 
-        for i, word in enumerate(self._model.docvecs.doctags):
+        for i, word in enumerate(self._model.vocab):
             self._clusters[self._kmeans.labels_[i]].append(word)
 
     def name(self) -> str:

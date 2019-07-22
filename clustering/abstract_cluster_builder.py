@@ -2,7 +2,7 @@ from abc import abstractmethod, ABC
 from pathlib import Path
 from typing import Dict, List
 
-from gensim.models import Doc2Vec
+from gensim.models import KeyedVectors
 
 from util.utils import measure
 
@@ -20,8 +20,8 @@ class AbstractClusterBuilder(ABC):
         measure(self._map_embeddings_to_clusters, "mapping entities to clusters")
 
     def _load_model(self) -> None:
-        self._model = Doc2Vec.load(self._input_model_path)
-        self._embeddings = self._model.docvecs.vectors_docs
+        self._model = KeyedVectors.load_word2vec_format(str(self._input_model_path.absolute()))
+        self._embeddings = self._model.vectors
 
     @abstractmethod
     def _train_specific_clusters(self) -> None:

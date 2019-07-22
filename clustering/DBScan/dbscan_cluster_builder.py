@@ -23,7 +23,7 @@ class DBScanClusterBuilder(AbstractClusterBuilder):
     def _map_embeddings_to_clusters(self) -> None:
         self._clusters = {label: [] for label in set(self._labels)}
 
-        for i, word in enumerate(self._model.docvecs.doctags):
+        for i, word in enumerate(self._model.vocab):
             self._clusters[self._dbscan.labels_[i]].append(word)
 
     def name(self) -> str:

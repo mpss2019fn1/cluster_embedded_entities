@@ -1,4 +1,4 @@
-from collections import Iterable
+from typing import Iterable
 
 from clustering.abstract_cluster_builder import AbstractClusterBuilder
 from writers.abstract_cluster_writer import AbstractClusterWriter
