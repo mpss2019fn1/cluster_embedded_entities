@@ -11,4 +11,6 @@ class CSVClusterWriter(AbstractClusterWriter):
         for i in cluster_builder.clusters().keys():
             yield from [f"{i},{value}" for value in cluster_builder.clusters()[i]]
 
+    def _file_extension(self):
+        return "csv"
 

@@ -15,7 +15,7 @@ class AbstractClusterWriter(ABC):
             self._write_to_output(cluster_builder, sys.stdout)
 
     def _write_to_file(self, cluster_builder: AbstractClusterBuilder, sink: Path) -> None:
-        with open(Path(sink.absolute(), f"{cluster_builder.name()}.txt"), "w+") as output:
+        with open(Path(sink.absolute(), f"{cluster_builder.name()}.{self._file_extension()}"), "w+") as output:
             self._write_to_output(cluster_builder, output)
 
     def _write_to_output(self, cluster_builder: AbstractClusterBuilder, output: TextIO):
@@ -23,4 +23,8 @@ class AbstractClusterWriter(ABC):
 
     @abstractmethod
     def _generate_output(self, cluster_builder: AbstractClusterBuilder) -> Iterable[str]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _file_extension(self):
         raise NotImplementedError

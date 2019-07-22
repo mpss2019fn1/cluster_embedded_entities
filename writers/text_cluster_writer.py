@@ -11,4 +11,7 @@ class TextClusterWriter(AbstractClusterWriter):
             yield f"[[CLUSTER {i}]] with {len(cluster_builder.clusters()[i])} entities"
             yield from cluster_builder.clusters()[i]
 
+    def _file_extension(self):
+        return "txt"
+
 
