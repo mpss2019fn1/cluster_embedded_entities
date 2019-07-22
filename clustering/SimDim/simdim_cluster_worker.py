@@ -1,6 +1,7 @@
 import logging
 import statistics
 import time
+from math import ceil
 from typing import List, Tuple, Optional, Dict, Iterable
 
 from gensim.models import KeyedVectors
@@ -85,6 +86,7 @@ class SimDimClusterWorker:
             return
 
         while self._current_end_index < len(self._sorted_values) - 1:
+            last_confirmed_start_index: int = self._current_end_index
             self._current_end_index = min(len(self._sorted_values) - 1,
                                           self._current_end_index + self._min_len())
 
@@ -100,11 +102,7 @@ class SimDimClusterWorker:
                     difference = self._end() - self._start()
 
             else:  # difference > self._tolerance
-                while difference > self._tolerance:
-                    self._current_end_index -= 1
-                    difference = self._end() - self._start()
-
-                self._current_end_index += 1  # add one, because the end_index is excluded from this cluster
+                self._current_end_index = self._find_last_conditional_index_in_range(last_confirmed_start_index)
 
             break
 
@@ -116,12 +114,56 @@ class SimDimClusterWorker:
             self._current_start_index = self._current_end_index
             return
 
-        next_start_minus_one: int = 0
-        for next_start_minus_one in range(self._current_end_index - 1, -1, -1):
-            if self._end() - self._sorted_values[next_start_minus_one] > self._tolerance:
-                break
+        self._current_start_index = self._find_first_conditional_index_in_range(self._current_start_index + 1)
 
-        self._current_start_index = next_start_minus_one + 1
+    def _find_last_conditional_index_in_range(self, start: int) -> int:
+        end: int = self._current_end_index
+
+        while end - start > 1:
+            pivot: int = start + ceil((end - start) / 2)
+            difference: float = self._difference(end_index=pivot)
+
+            if difference > self._tolerance:
+                end = pivot
+                continue
+
+            if difference == self._tolerance:
+                while difference == self._tolerance and pivot < self._current_end_index:
+                    pivot += 1
+                    difference = self._difference(end_index=pivot)
+                return pivot
+
+            # Difference < self.tolerance
+            start = pivot
+
+        return start if self._difference(end_index=start) > self._tolerance else end
+
+    def _find_first_conditional_index_in_range(self, start: int) -> int:
+        end: int = self._current_end_index
+
+        while end - start > 1:
+            pivot: int = start + ceil((end - start) / 2)
+            difference: float = self._difference(start_index=pivot)
+
+            if difference > self._tolerance:
+                start = pivot
+                continue
+
+            if difference == self._tolerance:
+                while difference == self._tolerance:
+                    pivot -= 1
+                    difference = self._difference(start_index=pivot)
+                return pivot + 1
+
+            # Difference < self.tolerance
+            end = pivot
+
+        return start if self._difference(start_index=start) <= self._tolerance else end
+
+    def _difference(self, start_index: int = None, end_index: int = None) -> float:
+        start_index = start_index if start_index is not None else self._current_start_index
+        end_index = end_index if end_index is not None else self._current_end_index
+        return self._sorted_values[end_index] - self._sorted_values[start_index]
 
     def _start(self) -> float:
         return self._sorted_values[self._current_start_index]
