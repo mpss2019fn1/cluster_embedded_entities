@@ -2,7 +2,7 @@ import logging
 import statistics
 import time
 from math import ceil
-from typing import List, Tuple, Optional, Dict, Iterable
+from typing import List, Tuple, Optional, Dict
 
 from gensim.models import KeyedVectors
 
@@ -38,7 +38,8 @@ class SimDimClusterWorker:
 
         self._sorted_values = [x[0] for x in sorted_tuples]
         self._sorted_labels = [x[1] for x in sorted_tuples]
-        self._tolerance = statistics.mean(self._sorted_values)
+        self._tolerance = statistics.mean(self._sorted_values) / 2
+        self._tolerance = self._calculate_tolerance()
         self._create_biggest_cluster()
 
         logging.info(f"[DIMENSION-{self._dimension}] done")
@@ -48,6 +49,12 @@ class SimDimClusterWorker:
 
         return {self._dimension: [self._sorted_labels[label_index]
                                   for label_index in range(self._biggest_cluster[0], self._biggest_cluster[1])]}
+
+    def _calculate_tolerance(self):
+        tolerance: float = 0
+        for i in range(1, len(self._sorted_values) - 1):
+            tolerance += self._sorted_values[i] - self._sorted_values[i - 1]
+        return tolerance * 2
 
     def _create_biggest_cluster(self) -> None:
         self._biggest_cluster = (0, 0)
