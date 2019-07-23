@@ -55,7 +55,7 @@ class SimDimClusterWorker:
         tolerance: float = 0
         for i in range(1, len(self._sorted_values) - 1):
             tolerance += self._sorted_values[i] - self._sorted_values[i - 1]
-        return tolerance * 2
+        return tolerance / len(self._sorted_values) * 2
 
     def _create_biggest_cluster(self) -> None:
         self._biggest_cluster = (0, 0)
