@@ -42,6 +42,7 @@ class SimDimClusterWorker:
         self._tolerance = self._calculate_tolerance()
         self._create_biggest_cluster()
 
+        logging.info(f"[DIMENSION-{self._dimension}] tolerance: {self._tolerance}")
         logging.info(f"[DIMENSION-{self._dimension}] done")
 
         if self._len(self._biggest_cluster) < self._minimum_cluster_size:
